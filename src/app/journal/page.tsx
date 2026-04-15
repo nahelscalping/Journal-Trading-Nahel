@@ -77,7 +77,7 @@ export default function JournalPage() {
         <motion.h1
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="text-3xl font-bold"
+          className="text-2xl md:text-3xl font-bold"
         >
           Journal de Trades
         </motion.h1>
@@ -91,7 +91,7 @@ export default function JournalPage() {
             setEditingTrade(null);
             setShowForm(true);
           }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-medium transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 glass-btn-primary rounded-2xl font-medium transition-all text-sm"
         >
           <Plus size={18} />
           Nouveau Trade
@@ -113,7 +113,7 @@ export default function JournalPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-surface rounded-2xl border border-border p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+              className="glass-card p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">
@@ -242,7 +242,7 @@ export default function JournalPage() {
 
                 <button
                   onClick={handleSubmit}
-                  className="w-full py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-medium transition-colors"
+                  className="w-full py-3 glass-btn-primary rounded-2xl font-medium transition-all"
                 >
                   {editingTrade ? "Modifier" : "Enregistrer"}
                 </button>
@@ -264,71 +264,136 @@ export default function JournalPage() {
           <p className="text-sm mt-1">Cliquez sur &quot;Nouveau Trade&quot; pour commencer</p>
         </motion.div>
       ) : (
-        <div className="bg-surface rounded-2xl border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Date</th>
-                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Paire</th>
-                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Type</th>
-                  <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Entrée</th>
-                  <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Sortie</th>
-                  <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Quantité</th>
-                  <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">PnL</th>
-                  <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {trades.map((trade, i) => (
-                  <motion.tr
-                    key={trade.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="border-b border-border/50 hover:bg-surface-light/50 transition-colors"
-                  >
-                    <td className="px-5 py-3.5 text-sm">{trade.date}</td>
-                    <td className="px-5 py-3.5 text-sm font-medium">{trade.pair}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${
-                        trade.type === "buy"
-                          ? "bg-accent-green/15 text-accent-green"
-                          : "bg-accent-red/15 text-accent-red"
-                      }`}>
-                        {trade.type === "buy" ? "ACHAT" : "VENTE"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-right">{trade.entryPrice.toFixed(2)} $</td>
-                    <td className="px-5 py-3.5 text-sm text-right">{trade.exitPrice.toFixed(2)} $</td>
-                    <td className="px-5 py-3.5 text-sm text-right">{trade.quantity}</td>
-                    <td className={`px-5 py-3.5 text-sm text-right font-semibold ${
-                      trade.pnl >= 0 ? "text-accent-green" : "text-accent-red"
+        <>
+          {/* Mobile: card layout */}
+          <div className="md:hidden space-y-3">
+            {trades.map((trade, i) => (
+              <motion.div
+                key={trade.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="glass-card p-4"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">{trade.pair}</span>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg ${
+                      trade.type === "buy"
+                        ? "bg-accent-green/15 text-accent-green"
+                        : "bg-accent-red/15 text-accent-red"
                     }`}>
-                      {trade.pnl >= 0 ? "+" : ""}{trade.pnl.toFixed(2)} $
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(trade)}
-                          className="p-1.5 rounded-lg hover:bg-surface-lighter text-text-muted hover:text-primary transition-colors"
-                        >
-                          <Edit3 size={15} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(trade.id)}
-                          className="p-1.5 rounded-lg hover:bg-surface-lighter text-text-muted hover:text-accent-red transition-colors"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+                      {trade.type === "buy" ? "ACHAT" : "VENTE"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleEdit(trade)}
+                      className="p-1.5 rounded-lg hover:bg-surface-lighter text-text-muted hover:text-primary transition-colors"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(trade.id)}
+                      className="p-1.5 rounded-lg hover:bg-surface-lighter text-text-muted hover:text-accent-red transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <p className="text-text-muted">Entrée</p>
+                    <p className="font-medium">{trade.entryPrice.toFixed(2)} $</p>
+                  </div>
+                  <div>
+                    <p className="text-text-muted">Sortie</p>
+                    <p className="font-medium">{trade.exitPrice.toFixed(2)} $</p>
+                  </div>
+                  <div>
+                    <p className="text-text-muted">Qté</p>
+                    <p className="font-medium">{trade.quantity}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                  <span className="text-xs text-text-muted">{trade.date}</span>
+                  <span className={`text-sm font-bold ${
+                    trade.pnl >= 0 ? "text-accent-green" : "text-accent-red"
+                  }`}>
+                    {trade.pnl >= 0 ? "+" : ""}{trade.pnl.toFixed(2)} $
+                  </span>
+                </div>
+              </motion.div>
+            ))}
           </div>
-        </div>
+
+          {/* Desktop: table layout */}
+          <div className="hidden md:block glass-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Date</th>
+                    <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Paire</th>
+                    <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Type</th>
+                    <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Entrée</th>
+                    <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Sortie</th>
+                    <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Quantité</th>
+                    <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">PnL</th>
+                    <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trades.map((trade, i) => (
+                    <motion.tr
+                      key={trade.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="border-b border-border/50 hover:bg-surface-light/50 transition-colors"
+                    >
+                      <td className="px-5 py-3.5 text-sm">{trade.date}</td>
+                      <td className="px-5 py-3.5 text-sm font-medium">{trade.pair}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${
+                          trade.type === "buy"
+                            ? "bg-accent-green/15 text-accent-green"
+                            : "bg-accent-red/15 text-accent-red"
+                        }`}>
+                          {trade.type === "buy" ? "ACHAT" : "VENTE"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-right">{trade.entryPrice.toFixed(2)} $</td>
+                      <td className="px-5 py-3.5 text-sm text-right">{trade.exitPrice.toFixed(2)} $</td>
+                      <td className="px-5 py-3.5 text-sm text-right">{trade.quantity}</td>
+                      <td className={`px-5 py-3.5 text-sm text-right font-semibold ${
+                        trade.pnl >= 0 ? "text-accent-green" : "text-accent-red"
+                      }`}>
+                        {trade.pnl >= 0 ? "+" : ""}{trade.pnl.toFixed(2)} $
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(trade)}
+                            className="p-1.5 rounded-lg hover:bg-surface-lighter text-text-muted hover:text-primary transition-colors"
+                          >
+                            <Edit3 size={15} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(trade.id)}
+                            className="p-1.5 rounded-lg hover:bg-surface-lighter text-text-muted hover:text-accent-red transition-colors"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

@@ -5,9 +5,19 @@ import { motion } from "framer-motion";
 import { BarChart3, TrendingUp, TrendingDown, Target, DollarSign } from "lucide-react";
 import { getStats, getTrades } from "@/lib/store";
 import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
+
+const neonTooltip = {
+  backgroundColor: "rgba(6, 8, 15, 0.95)",
+  border: "1px solid rgba(0, 230, 118, 0.3)",
+  borderRadius: "14px",
+  color: "#00e676",
+  boxShadow: "0 0 20px rgba(0, 230, 118, 0.15)",
+  padding: "12px 16px",
+  fontSize: "13px",
+};
 
 export default function StatsPage() {
   const [stats, setStats] = useState(getStats());
@@ -18,27 +28,22 @@ export default function StatsPage() {
     setTrades(getTrades());
   }, []);
 
-  // PnL by pair
   const pairMap = new Map<string, number>();
-  trades.forEach((t) => {
-    pairMap.set(t.pair, (pairMap.get(t.pair) || 0) + t.pnl);
-  });
-  const pairData = Array.from(pairMap.entries()).map(([pair, pnl]) => ({ pair, pnl }));
+  trades.forEach((t) => pairMap.set(t.pair, (pairMap.get(t.pair) || 0) + t.pnl));
+  const pairData = Array.from(pairMap.entries()).map(([pair, pnl]) => ({
+    pair, pnl: Math.round(pnl * 100) / 100,
+  }));
 
-  // Win/Loss distribution
   const winLossData = [
-    { name: "Gains", value: stats.wins, color: "#22c55e" },
-    { name: "Pertes", value: stats.losses, color: "#ef4444" },
+    { name: "Gains", value: stats.wins, color: "#00e676" },
+    { name: "Pertes", value: stats.losses, color: "#ff3b5c" },
   ];
 
-  // Daily PnL
   const dailyMap = new Map<string, number>();
-  trades.forEach((t) => {
-    dailyMap.set(t.date, (dailyMap.get(t.date) || 0) + t.pnl);
-  });
+  trades.forEach((t) => dailyMap.set(t.date, (dailyMap.get(t.date) || 0) + t.pnl));
   const dailyData = Array.from(dailyMap.entries())
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([date, pnl]) => ({ date, pnl }));
+    .map(([date, pnl]) => ({ date, pnl: Math.round(pnl * 100) / 100 }));
 
   const hasTrades = trades.length > 0;
 
@@ -47,103 +52,112 @@ export default function StatsPage() {
       <motion.h1
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="text-3xl font-bold mb-8"
+        className="text-2xl md:text-3xl font-bold mb-8"
       >
         Statistiques
       </motion.h1>
 
       {!hasTrades ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center justify-center py-32 text-text-muted"
-        >
-          <BarChart3 size={56} className="mb-4 opacity-30" />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center py-32 text-text-muted">
+          <BarChart3 size={56} className="mb-4 opacity-20" />
           <p className="text-lg font-medium">Aucune statistique disponible</p>
-          <p className="text-sm mt-1">Ajoutez des trades dans le Journal pour voir vos stats</p>
+          <p className="text-sm mt-1 text-text-muted/60">Ajoutez des trades dans le Journal pour voir vos stats</p>
         </motion.div>
       ) : (
         <>
           {/* Top stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
             {[
-              { icon: BarChart3, label: "Trades", value: stats.totalTrades, color: "text-primary" },
-              { icon: Target, label: "Win Rate", value: `${stats.winRate.toFixed(1)}%`, color: "text-accent-green" },
-              { icon: stats.totalPnl >= 0 ? TrendingUp : TrendingDown, label: "PnL Total", value: `${stats.totalPnl >= 0 ? "+" : ""}${stats.totalPnl.toFixed(2)} $`, color: stats.totalPnl >= 0 ? "text-accent-green" : "text-accent-red" },
+              { icon: BarChart3, label: "Trades", value: stats.totalTrades, color: "text-primary neon-blue" },
+              { icon: Target, label: "Win Rate", value: `${stats.winRate.toFixed(1)}%`, color: "text-accent-green neon-green" },
+              { icon: stats.totalPnl >= 0 ? TrendingUp : TrendingDown, label: "PnL Total",
+                value: `${stats.totalPnl >= 0 ? "+" : ""}${stats.totalPnl.toFixed(2)} $`,
+                color: stats.totalPnl >= 0 ? "text-accent-green neon-green" : "text-accent-red neon-red" },
               { icon: DollarSign, label: "Profit Factor", value: stats.profitFactor.toFixed(2), color: "text-accent-yellow" },
             ].map((s, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-surface rounded-2xl border border-border p-5 text-center"
-              >
-                <s.icon size={24} className={`mx-auto mb-2 ${s.color}`} />
-                <p className="text-2xl font-bold">{s.value}</p>
-                <p className="text-xs text-text-muted mt-1">{s.label}</p>
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }} className="glass-card p-5 text-center">
+                <s.icon size={22} className={`mx-auto mb-2 ${s.color}`} />
+                <p className={`text-xl md:text-2xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-[10px] text-text-muted mt-1 uppercase tracking-wider">{s.label}</p>
               </motion.div>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Equity curve */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-surface rounded-2xl border border-border p-6"
-            >
-              <h2 className="text-lg font-semibold mb-4">Courbe d&apos;équité</h2>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }} className="glass-card p-5 md:p-6">
+              <h2 className="text-base font-semibold mb-1">Courbe d&apos;équité</h2>
+              <p className="text-xs text-text-muted mb-4">Performance cumulative</p>
               <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={stats.equityCurve}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2d5a" />
-                  <XAxis dataKey="date" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                  <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ backgroundColor: "rgba(10,11,26,0.95)", border: "1px solid #22c55e", borderRadius: "12px", color: "#22c55e", boxShadow: "0 0 15px rgba(34,197,94,0.3)" }} />
-                  <Line type="monotone" dataKey="equity" stroke="#5B6EF5" strokeWidth={2} dot={false} />
-                </LineChart>
+                <AreaChart data={stats.equityCurve}>
+                  <defs>
+                    <linearGradient id="eqG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#00e676" stopOpacity={0.2} />
+                      <stop offset="100%" stopColor="#00e676" stopOpacity={0} />
+                    </linearGradient>
+                    <filter id="gl"><feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#00e676" floodOpacity="0.5"/></filter>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,45,90,0.25)" vertical={false} />
+                  <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={neonTooltip} />
+                  <Area type="monotone" dataKey="equity" stroke="#00e676" strokeWidth={2.5} fill="url(#eqG)" filter="url(#gl)" />
+                </AreaChart>
               </ResponsiveContainer>
             </motion.div>
 
             {/* Win/Loss pie */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              className="bg-surface rounded-2xl border border-border p-6"
-            >
-              <h2 className="text-lg font-semibold mb-4">Répartition Gains/Pertes</h2>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }} className="glass-card p-5 md:p-6">
+              <h2 className="text-base font-semibold mb-1">Répartition Gains/Pertes</h2>
+              <p className="text-xs text-text-muted mb-4">Distribution des résultats</p>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
-                  <Pie data={winLossData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" label>
+                  <defs>
+                    <filter id="pgG"><feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#00e676" floodOpacity="0.4"/></filter>
+                    <filter id="pgR"><feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#ff3b5c" floodOpacity="0.4"/></filter>
+                  </defs>
+                  <Pie data={winLossData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value"
+                    stroke="none" label={{ fontSize: 12, fill: "#e2e8f0" }}>
                     {winLossData.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} />
+                      <Cell key={index} fill={entry.color} filter={index === 0 ? "url(#pgG)" : "url(#pgR)"} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: "rgba(10,11,26,0.95)", border: "1px solid #22c55e", borderRadius: "12px", color: "#22c55e", boxShadow: "0 0 15px rgba(34,197,94,0.3)" }} />
-                  <Legend />
+                  <Tooltip contentStyle={neonTooltip} />
+                  <Legend wrapperStyle={{ fontSize: "12px", color: "#94a3b8" }} />
                 </PieChart>
               </ResponsiveContainer>
             </motion.div>
 
             {/* PnL by pair */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-surface rounded-2xl border border-border p-6"
-            >
-              <h2 className="text-lg font-semibold mb-4">PnL par Paire</h2>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }} className="glass-card p-5 md:p-6">
+              <h2 className="text-base font-semibold mb-1">PnL par Paire</h2>
+              <p className="text-xs text-text-muted mb-4">Performance par actif</p>
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={pairData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2d5a" />
-                  <XAxis dataKey="pair" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                  <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ backgroundColor: "rgba(10,11,26,0.95)", border: "1px solid #22c55e", borderRadius: "12px", color: "#22c55e", boxShadow: "0 0 15px rgba(34,197,94,0.3)" }} />
-                  <Bar dataKey="pnl" radius={[6, 6, 0, 0]}>
+                <BarChart data={pairData} barCategoryGap="25%">
+                  <defs>
+                    <linearGradient id="gB2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#00e676" stopOpacity={0.9} /><stop offset="100%" stopColor="#00e676" stopOpacity={0.3} />
+                    </linearGradient>
+                    <linearGradient id="rB2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ff3b5c" stopOpacity={0.9} /><stop offset="100%" stopColor="#ff3b5c" stopOpacity={0.3} />
+                    </linearGradient>
+                    <filter id="gBg"><feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#00e676" floodOpacity="0.4"/></filter>
+                    <filter id="rBg"><feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#ff3b5c" floodOpacity="0.4"/></filter>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,45,90,0.25)" vertical={false} />
+                  <XAxis dataKey="pair" stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={neonTooltip} />
+                  <Bar dataKey="pnl" radius={[8, 8, 0, 0]} maxBarSize={40}>
                     {pairData.map((entry, index) => (
-                      <Cell key={index} fill={entry.pnl >= 0 ? "#22c55e" : "#ef4444"} />
+                      <Cell key={index}
+                        fill={entry.pnl >= 0 ? "url(#gB2)" : "url(#rB2)"}
+                        filter={entry.pnl >= 0 ? "url(#gBg)" : "url(#rBg)"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -151,22 +165,21 @@ export default function StatsPage() {
             </motion.div>
 
             {/* Daily PnL */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45 }}
-              className="bg-surface rounded-2xl border border-border p-6"
-            >
-              <h2 className="text-lg font-semibold mb-4">PnL Journalier</h2>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 }} className="glass-card p-5 md:p-6">
+              <h2 className="text-base font-semibold mb-1">PnL Journalier</h2>
+              <p className="text-xs text-text-muted mb-4">Résultat quotidien</p>
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={dailyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2d5a" />
-                  <XAxis dataKey="date" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                  <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ backgroundColor: "rgba(10,11,26,0.95)", border: "1px solid #22c55e", borderRadius: "12px", color: "#22c55e", boxShadow: "0 0 15px rgba(34,197,94,0.3)" }} />
-                  <Bar dataKey="pnl" radius={[6, 6, 0, 0]}>
+                <BarChart data={dailyData} barCategoryGap="15%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,45,90,0.25)" vertical={false} />
+                  <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={neonTooltip} />
+                  <Bar dataKey="pnl" radius={[8, 8, 0, 0]} maxBarSize={28}>
                     {dailyData.map((entry, index) => (
-                      <Cell key={index} fill={entry.pnl >= 0 ? "#22c55e" : "#ef4444"} />
+                      <Cell key={index}
+                        fill={entry.pnl >= 0 ? "url(#gB2)" : "url(#rB2)"}
+                        filter={entry.pnl >= 0 ? "url(#gBg)" : "url(#rBg)"} />
                     ))}
                   </Bar>
                 </BarChart>

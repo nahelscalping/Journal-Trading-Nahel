@@ -72,7 +72,7 @@ export default function PlansPage() {
             setEditingPlan(null);
             setShowForm(true);
           }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-medium transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 glass-btn-primary rounded-2xl font-medium transition-all text-sm"
         >
           <Plus size={18} />
           Créer un plan
@@ -94,7 +94,7 @@ export default function PlansPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-surface rounded-2xl border border-border p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+              className="glass-card p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">
@@ -172,7 +172,7 @@ export default function PlansPage() {
 
                 <button
                   onClick={handleSubmit}
-                  className="w-full py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-medium transition-colors"
+                  className="w-full py-3 glass-btn-primary rounded-2xl font-medium transition-all"
                 >
                   {editingPlan ? "Modifier" : "Créer le plan"}
                 </button>
@@ -200,7 +200,7 @@ export default function PlansPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className={`bg-surface rounded-2xl border border-border p-6 cursor-pointer hover:border-primary/30 transition-all ${
+              className={`glass-card p-6 cursor-pointer transition-all ${
                 selectedPlan?.id === plan.id ? "border-primary/50 ring-1 ring-primary/20" : ""
               }`}
               onClick={() => setSelectedPlan(selectedPlan?.id === plan.id ? null : plan)}

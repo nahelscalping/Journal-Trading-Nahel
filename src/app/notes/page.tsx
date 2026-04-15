@@ -69,7 +69,7 @@ export default function NotesPage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={createNote}
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-medium transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 glass-btn-primary rounded-2xl font-medium transition-all text-sm"
           >
             <Plus size={18} />
             Nouvelle note
@@ -81,7 +81,7 @@ export default function NotesPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-surface rounded-2xl border border-border p-6"
+          className="glass-card p-6"
         >
           <input
             type="text"
@@ -118,7 +118,7 @@ export default function NotesPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="bg-surface rounded-2xl border border-border p-5 cursor-pointer hover:border-primary/30 transition-all group"
+              className="glass-card p-5 cursor-pointer group"
               onClick={() => setSelectedNote(note)}
             >
               <div className="flex items-start justify-between mb-2">
