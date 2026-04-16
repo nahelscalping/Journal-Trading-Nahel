@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, TrendingUp, TrendingDown, Target, DollarSign } from "lucide-react";
+import { BarChart3, TrendingUp, TrendingDown, Target, DollarSign, Wallet, Percent } from "lucide-react";
 import { getStats, getTrades } from "@/lib/store";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -66,8 +66,46 @@ export default function StatsPage() {
         </motion.div>
       ) : (
         <>
+          {/* Capital Growth Banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="glass-card p-5 md:p-6 mb-6"
+          >
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent-green/20 border border-primary/20">
+                  <Wallet size={22} className="text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-text-muted uppercase tracking-wider mb-1">Croissance du capital</p>
+                  <div className="flex items-end gap-3">
+                    <p className={`text-2xl md:text-3xl font-bold ${stats.capitalGrowthPercent >= 0 ? "text-accent-green neon-green" : "text-accent-red neon-red"}`}>
+                      {stats.capitalGrowthPercent >= 0 ? "+" : ""}{stats.capitalGrowthPercent.toFixed(2)}%
+                    </p>
+                    <p className="text-sm text-text-muted mb-1">effet composé inclus</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-6 text-sm">
+                <div className="text-center">
+                  <p className="text-xs text-text-muted">Départ</p>
+                  <p className="font-semibold">{stats.startingCapital.toLocaleString("fr-FR")} $</p>
+                </div>
+                <div className="text-2xl text-text-muted">→</div>
+                <div className="text-center">
+                  <p className="text-xs text-text-muted">Actuel</p>
+                  <p className={`font-semibold ${stats.currentCapital >= stats.startingCapital ? "text-accent-green" : "text-accent-red"}`}>
+                    {stats.currentCapital.toLocaleString("fr-FR")} $
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
           {/* Top stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-8">
             {[
               { icon: BarChart3, label: "Trades", value: stats.totalTrades, color: "text-primary neon-blue" },
               { icon: Target, label: "Win Rate", value: `${stats.winRate.toFixed(1)}%`, color: "text-accent-green neon-green" },
@@ -75,6 +113,8 @@ export default function StatsPage() {
                 value: `${stats.totalPnl >= 0 ? "+" : ""}${stats.totalPnl.toFixed(2)} $`,
                 color: stats.totalPnl >= 0 ? "text-accent-green neon-green" : "text-accent-red neon-red" },
               { icon: DollarSign, label: "Profit Factor", value: stats.profitFactor.toFixed(2), color: "text-accent-yellow" },
+              { icon: Percent, label: "Croissance", value: `${stats.capitalGrowthPercent >= 0 ? "+" : ""}${stats.capitalGrowthPercent.toFixed(1)}%`,
+                color: stats.capitalGrowthPercent >= 0 ? "text-accent-green neon-green" : "text-accent-red neon-red" },
             ].map((s, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }} className="glass-card p-5 text-center">
@@ -86,11 +126,11 @@ export default function StatsPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-            {/* Equity curve */}
+            {/* Capital growth curve */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }} className="glass-card p-5 md:p-6">
-              <h2 className="text-base font-semibold mb-1">Courbe d&apos;équité</h2>
-              <p className="text-xs text-text-muted mb-4">Performance cumulative</p>
+              <h2 className="text-base font-semibold mb-1">Évolution du capital</h2>
+              <p className="text-xs text-text-muted mb-4">Capital avec effet composé</p>
               <ResponsiveContainer width="100%" height={250}>
                 <AreaChart data={stats.equityCurve}>
                   <defs>
@@ -102,7 +142,8 @@ export default function StatsPage() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,45,90,0.25)" vertical={false} />
                   <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false}
+                    tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(1)}k` : v} />
                   <Tooltip contentStyle={neonTooltip} />
                   <Area type="monotone" dataKey="equity" stroke="#00e676" strokeWidth={2.5} fill="url(#eqG)" filter="url(#gl)" />
                 </AreaChart>
@@ -131,6 +172,33 @@ export default function StatsPage() {
                 </PieChart>
               </ResponsiveContainer>
             </motion.div>
+
+            {/* Capital growth % curve */}
+            {stats.capitalHistory.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.38 }} className="glass-card p-5 md:p-6">
+                <h2 className="text-base font-semibold mb-1">Croissance en %</h2>
+                <p className="text-xs text-text-muted mb-4">Pourcentage de progression depuis le départ</p>
+                <ResponsiveContainer width="100%" height={250}>
+                  <AreaChart data={stats.capitalHistory}>
+                    <defs>
+                      <linearGradient id="gpG" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#5B6EF5" stopOpacity={0.25} />
+                        <stop offset="100%" stopColor="#5B6EF5" stopOpacity={0} />
+                      </linearGradient>
+                      <filter id="glB"><feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#5B6EF5" floodOpacity="0.5"/></filter>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,45,90,0.25)" vertical={false} />
+                    <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false}
+                      tickFormatter={(v) => `${v}%`} />
+                    <Tooltip contentStyle={{...neonTooltip, border: "1px solid rgba(91,110,245,0.3)", color: "#7B8AF7"}} />
+                    <Area type="monotone" dataKey="growthPct" stroke="#5B6EF5" strokeWidth={2.5} fill="url(#gpG)" filter="url(#glB)"
+                      name="Croissance %" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </motion.div>
+            )}
 
             {/* PnL by pair */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -166,7 +234,7 @@ export default function StatsPage() {
 
             {/* Daily PnL */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45 }} className="glass-card p-5 md:p-6">
+              transition={{ delay: 0.45 }} className="glass-card p-5 md:p-6 lg:col-span-2">
               <h2 className="text-base font-semibold mb-1">PnL Journalier</h2>
               <p className="text-xs text-text-muted mb-4">Résultat quotidien</p>
               <ResponsiveContainer width="100%" height={250}>

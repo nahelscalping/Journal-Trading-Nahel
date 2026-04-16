@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Target, DollarSign, BarChart3, Award } from "lucide-react";
-import { getStats, getTrades } from "@/lib/store";
+import { TrendingUp, TrendingDown, Target, DollarSign, BarChart3, Award, Wallet, Percent } from "lucide-react";
+import { getStats, getTrades, getCurrentCapital, getSettings } from "@/lib/store";
 import {
   AreaChart, Area, BarChart, Bar, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 
-function StatCard({ icon: Icon, label, value, color, delay }: {
-  icon: React.ElementType; label: string; value: string; color: string; delay: number;
+function StatCard({ icon: Icon, label, value, color, delay, subtitle }: {
+  icon: React.ElementType; label: string; value: string; color: string; delay: number; subtitle?: string;
 }) {
   return (
     <motion.div
@@ -25,7 +25,8 @@ function StatCard({ icon: Icon, label, value, color, delay }: {
         </div>
         <span className="text-text-muted text-xs font-medium uppercase tracking-wider">{label}</span>
       </div>
-      <p className="text-2xl font-bold">{value}</p>
+      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+      {subtitle && <p className="text-xs text-text-muted mt-1">{subtitle}</p>}
     </motion.div>
   );
 }
@@ -43,15 +44,19 @@ const neonTooltip = {
 export default function DashboardPage() {
   const [stats, setStats] = useState(getStats());
   const [trades, setTrades] = useState(getTrades());
+  const [capital, setCapital] = useState(0);
+  const [settings, setSettingsState] = useState(getSettings());
 
   useEffect(() => {
     setStats(getStats());
     setTrades(getTrades());
+    setCapital(getCurrentCapital());
+    setSettingsState(getSettings());
   }, []);
 
   const recentTrades = trades.slice(0, 5);
 
-  // Build daily PnL data for bar chart like TradeZella
+  // Build daily PnL data for bar chart
   const dailyMap = new Map<string, number>();
   let cumulative = 0;
   const sortedTrades = trades.slice().reverse();
@@ -70,10 +75,40 @@ export default function DashboardPage() {
       <motion.h1
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="text-2xl md:text-3xl font-bold mb-8"
+        className="text-2xl md:text-3xl font-bold mb-6"
       >
         Vue d&apos;ensemble
       </motion.h1>
+
+      {/* Capital banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="glass-card p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary/25 to-accent-green/15 border border-primary/20">
+            <Wallet size={20} className="text-primary" />
+          </div>
+          <div>
+            <p className="text-xs text-text-muted">Mon capital</p>
+            <p className={`text-xl font-bold ${capital >= settings.startingCapital ? "text-accent-green neon-green" : "text-accent-red neon-red"}`}>
+              {capital.toLocaleString("fr-FR")} $
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`text-sm font-semibold px-3 py-1 rounded-xl ${
+            stats.capitalGrowthPercent >= 0
+              ? "bg-accent-green/15 text-accent-green"
+              : "bg-accent-red/15 text-accent-red"
+          }`}>
+            {stats.capitalGrowthPercent >= 0 ? "+" : ""}{stats.capitalGrowthPercent.toFixed(2)}%
+          </span>
+          <span className="text-xs text-text-muted">depuis {settings.startingCapital.toLocaleString("fr-FR")} $</span>
+        </div>
+      </motion.div>
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
@@ -87,7 +122,7 @@ export default function DashboardPage() {
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        {/* P&L Journalier & Cumulé - TradeZella style */}
+        {/* P&L bar chart */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -157,11 +192,16 @@ export default function DashboardPage() {
                     <p className="font-medium text-sm">{trade.pair}</p>
                     <p className="text-[11px] text-text-muted">{trade.date}</p>
                   </div>
-                  <span className={`text-sm font-bold ${
-                    trade.pnl >= 0 ? "text-accent-green neon-green" : "text-accent-red neon-red"
-                  }`}>
-                    {trade.pnl >= 0 ? "+" : ""}{trade.pnl.toFixed(2)} $
-                  </span>
+                  <div className="text-right">
+                    <span className={`text-sm font-bold ${
+                      trade.pnl >= 0 ? "text-accent-green neon-green" : "text-accent-red neon-red"
+                    }`}>
+                      {trade.pnl >= 0 ? "+" : ""}{trade.pnl.toFixed(2)} $
+                    </span>
+                    <p className={`text-[10px] ${trade.pnlPercent >= 0 ? "text-accent-green" : "text-accent-red"}`}>
+                      {trade.pnlPercent >= 0 ? "+" : ""}{trade.pnlPercent.toFixed(2)}%
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -183,7 +223,7 @@ export default function DashboardPage() {
         >
           <div className="mb-1">
             <h2 className="text-base font-semibold">Courbe d&apos;équité</h2>
-            <p className="text-xs text-text-muted">Évolution cumulative des gains</p>
+            <p className="text-xs text-text-muted">Évolution cumulative du capital</p>
           </div>
           <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={stats.equityCurve}>
@@ -198,7 +238,8 @@ export default function DashboardPage() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,45,90,0.25)" vertical={false} />
               <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis stroke="#64748b" tick={{ fontSize: 10 }} axisLine={false} tickLine={false}
+                tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(1)}k` : v} />
               <Tooltip contentStyle={neonTooltip} />
               <Area type="monotone" dataKey="equity" stroke="#00e676" strokeWidth={2.5}
                 fill="url(#equityGrad)" filter="url(#glowLine)"

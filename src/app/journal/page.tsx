@@ -2,58 +2,72 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Edit3, X, TrendingUp, TrendingDown } from "lucide-react";
-import { getTrades, saveTrade, deleteTrade, generateId, Trade } from "@/lib/store";
+import { Plus, Trash2, Edit3, X, TrendingUp, TrendingDown, DollarSign, Wallet } from "lucide-react";
+import {
+  getTrades, saveTrade, deleteTrade, generateId,
+  getCurrentCapital, calculateTradePnl, getSettings,
+  Trade,
+} from "@/lib/store";
 
-const defaultTrade: Omit<Trade, "id"> = {
+type TradeForm = Omit<Trade, "id">;
+
+const makeDefaultTrade = (capital: number): TradeForm => ({
   date: new Date().toISOString().split("T")[0],
   pair: "",
   type: "buy",
   entryPrice: 0,
   exitPrice: 0,
-  quantity: 0,
+  amountInvested: capital,
+  feePercent: 0.1,
   fees: 0,
   pnl: 0,
   pnlPercent: 0,
   notes: "",
   tags: [],
-};
+});
 
 export default function JournalPage() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
-  const [form, setForm] = useState(defaultTrade);
+  const [form, setForm] = useState<TradeForm>(makeDefaultTrade(1000));
+  const [currentCapital, setCurrentCapital] = useState(1000);
 
   useEffect(() => {
     setTrades(getTrades());
+    setCurrentCapital(getCurrentCapital());
   }, []);
 
-  const calcPnl = (f: typeof form) => {
-    const diff = f.type === "buy"
-      ? (f.exitPrice - f.entryPrice) * f.quantity
-      : (f.entryPrice - f.exitPrice) * f.quantity;
-    const pnl = Math.round((diff - f.fees) * 100) / 100;
-    const pnlPercent = f.entryPrice > 0 && f.quantity > 0
-      ? Math.round((pnl / (f.entryPrice * f.quantity)) * 10000) / 100
-      : 0;
-    return { pnl, pnlPercent };
-  };
+  const liveCalc = calculateTradePnl(
+    form.type,
+    form.entryPrice,
+    form.exitPrice,
+    form.amountInvested,
+    form.feePercent
+  );
 
   const handleSubmit = () => {
-    if (!form.pair || !form.entryPrice || !form.quantity) return;
-    const { pnl, pnlPercent } = calcPnl(form);
+    if (!form.pair || !form.entryPrice) return;
+    const { pnl, pnlPercent, fees } = calculateTradePnl(
+      form.type,
+      form.entryPrice,
+      form.exitPrice,
+      form.amountInvested,
+      form.feePercent
+    );
     const trade: Trade = {
       ...form,
       pnl,
       pnlPercent,
+      fees,
       id: editingTrade?.id || generateId(),
     };
     saveTrade(trade);
     setTrades(getTrades());
+    setCurrentCapital(getCurrentCapital());
     setShowForm(false);
     setEditingTrade(null);
-    setForm(defaultTrade);
+    setForm(makeDefaultTrade(getCurrentCapital()));
   };
 
   const handleEdit = (trade: Trade) => {
@@ -65,11 +79,21 @@ export default function JournalPage() {
   const handleDelete = (id: string) => {
     deleteTrade(id);
     setTrades(getTrades());
+    setCurrentCapital(getCurrentCapital());
+  };
+
+  const openNewTrade = () => {
+    const cap = getCurrentCapital();
+    setForm(makeDefaultTrade(cap));
+    setEditingTrade(null);
+    setShowForm(true);
   };
 
   const updateField = (field: string, value: string | number) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  const settings = getSettings();
 
   return (
     <div>
@@ -86,17 +110,39 @@ export default function JournalPage() {
           animate={{ opacity: 1, scale: 1 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => {
-            setForm(defaultTrade);
-            setEditingTrade(null);
-            setShowForm(true);
-          }}
+          onClick={openNewTrade}
           className="flex items-center gap-2 px-5 py-2.5 glass-btn-primary rounded-2xl font-medium transition-all text-sm"
         >
           <Plus size={18} />
           Nouveau Trade
         </motion.button>
       </div>
+
+      {/* Capital banner */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center glass-btn text-primary">
+            <Wallet size={18} />
+          </div>
+          <div>
+            <p className="text-xs text-text-muted">Capital actuel</p>
+            <p className={`text-lg font-bold ${currentCapital >= settings.startingCapital ? "text-accent-green" : "text-accent-red"}`}>
+              {currentCapital.toLocaleString("fr-FR")} $
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 text-xs text-text-muted">
+          <span>Départ: {settings.startingCapital.toLocaleString("fr-FR")} $</span>
+          <span className={`font-medium ${currentCapital >= settings.startingCapital ? "text-accent-green" : "text-accent-red"}`}>
+            {currentCapital >= settings.startingCapital ? "+" : ""}
+            {settings.startingCapital > 0 ? (((currentCapital - settings.startingCapital) / settings.startingCapital) * 100).toFixed(2) : 0}%
+          </span>
+        </div>
+      </motion.div>
 
       {/* Modal Form */}
       <AnimatePresence>
@@ -173,6 +219,24 @@ export default function JournalPage() {
                   </div>
                 </div>
 
+                {/* Amount invested - auto filled with current capital */}
+                <div>
+                  <label className="text-sm text-text-muted mb-1 flex items-center gap-2">
+                    <DollarSign size={14} className="text-primary" />
+                    Montant investi ($)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={form.amountInvested || ""}
+                    onChange={(e) => updateField("amountInvested", parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm"
+                  />
+                  <p className="text-[11px] text-text-muted mt-1">
+                    Auto-rempli avec votre capital actuel ({currentCapital.toLocaleString("fr-FR")} $)
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm text-text-muted mb-1 block">Prix d&apos;entrée ($)</label>
@@ -181,6 +245,7 @@ export default function JournalPage() {
                       step="any"
                       value={form.entryPrice || ""}
                       onChange={(e) => updateField("entryPrice", parseFloat(e.target.value) || 0)}
+                      placeholder="80000"
                       className="w-full px-3 py-2.5 rounded-xl text-sm"
                     />
                   </div>
@@ -191,40 +256,42 @@ export default function JournalPage() {
                       step="any"
                       value={form.exitPrice || ""}
                       onChange={(e) => updateField("exitPrice", parseFloat(e.target.value) || 0)}
+                      placeholder="90000"
                       className="w-full px-3 py-2.5 rounded-xl text-sm"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-text-muted mb-1 block">Quantité</label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={form.quantity || ""}
-                      onChange={(e) => updateField("quantity", parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2.5 rounded-xl text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-text-muted mb-1 block">Frais ($)</label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={form.fees || ""}
-                      onChange={(e) => updateField("fees", parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2.5 rounded-xl text-sm"
-                    />
-                  </div>
+                {/* Fees in % */}
+                <div>
+                  <label className="text-sm text-text-muted mb-1 block">Frais (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.feePercent || ""}
+                    onChange={(e) => updateField("feePercent", parseFloat(e.target.value) || 0)}
+                    placeholder="0.1"
+                    className="w-full px-3 py-2.5 rounded-xl text-sm"
+                  />
+                  <p className="text-[11px] text-text-muted mt-1">
+                    Frais estimés: {liveCalc.fees.toFixed(2)} $ (aller-retour)
+                  </p>
                 </div>
 
-                {form.entryPrice > 0 && form.exitPrice > 0 && form.quantity > 0 && (
-                  <div className="p-3 rounded-xl bg-surface-light">
-                    <p className="text-sm text-text-muted">PnL estimé</p>
-                    <p className={`text-lg font-bold ${calcPnl(form).pnl >= 0 ? "text-accent-green" : "text-accent-red"}`}>
-                      {calcPnl(form).pnl >= 0 ? "+" : ""}{calcPnl(form).pnl.toFixed(2)} $
-                      <span className="text-sm ml-2">({calcPnl(form).pnlPercent.toFixed(2)}%)</span>
+                {/* Live PnL preview */}
+                {form.entryPrice > 0 && form.exitPrice > 0 && form.amountInvested > 0 && (
+                  <div className={`p-4 rounded-2xl ${liveCalc.pnl >= 0 ? "bg-accent-green/10 border border-accent-green/20" : "bg-accent-red/10 border border-accent-red/20"}`}>
+                    <p className="text-xs text-text-muted mb-1">Résultat estimé</p>
+                    <div className="flex items-end gap-3">
+                      <p className={`text-2xl font-bold ${liveCalc.pnl >= 0 ? "text-accent-green neon-green" : "text-accent-red neon-red"}`}>
+                        {liveCalc.pnl >= 0 ? "+" : ""}{liveCalc.pnl.toFixed(2)} $
+                      </p>
+                      <p className={`text-sm font-medium mb-0.5 ${liveCalc.pnlPercent >= 0 ? "text-accent-green" : "text-accent-red"}`}>
+                        ({liveCalc.pnlPercent >= 0 ? "+" : ""}{liveCalc.pnlPercent.toFixed(2)}%)
+                      </p>
+                    </div>
+                    <p className="text-xs text-text-muted mt-2">
+                      Capital après trade: {(currentCapital + liveCalc.pnl).toLocaleString("fr-FR")} $
                     </p>
                   </div>
                 )}
@@ -303,6 +370,10 @@ export default function JournalPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div>
+                    <p className="text-text-muted">Investi</p>
+                    <p className="font-medium">{trade.amountInvested?.toFixed(0) || "—"} $</p>
+                  </div>
+                  <div>
                     <p className="text-text-muted">Entrée</p>
                     <p className="font-medium">{trade.entryPrice.toFixed(2)} $</p>
                   </div>
@@ -310,18 +381,21 @@ export default function JournalPage() {
                     <p className="text-text-muted">Sortie</p>
                     <p className="font-medium">{trade.exitPrice.toFixed(2)} $</p>
                   </div>
-                  <div>
-                    <p className="text-text-muted">Qté</p>
-                    <p className="font-medium">{trade.quantity}</p>
-                  </div>
                 </div>
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
                   <span className="text-xs text-text-muted">{trade.date}</span>
-                  <span className={`text-sm font-bold ${
-                    trade.pnl >= 0 ? "text-accent-green" : "text-accent-red"
-                  }`}>
-                    {trade.pnl >= 0 ? "+" : ""}{trade.pnl.toFixed(2)} $
-                  </span>
+                  <div className="text-right">
+                    <span className={`text-sm font-bold ${
+                      trade.pnl >= 0 ? "text-accent-green" : "text-accent-red"
+                    }`}>
+                      {trade.pnl >= 0 ? "+" : ""}{trade.pnl.toFixed(2)} $
+                    </span>
+                    <span className={`text-xs ml-1.5 ${
+                      trade.pnlPercent >= 0 ? "text-accent-green" : "text-accent-red"
+                    }`}>
+                      ({trade.pnlPercent >= 0 ? "+" : ""}{trade.pnlPercent.toFixed(2)}%)
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -336,10 +410,11 @@ export default function JournalPage() {
                     <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Date</th>
                     <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Paire</th>
                     <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Type</th>
+                    <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Investi</th>
                     <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Entrée</th>
                     <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Sortie</th>
-                    <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Quantité</th>
                     <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">PnL</th>
+                    <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">%</th>
                     <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider px-5 py-4">Actions</th>
                   </tr>
                 </thead>
@@ -363,13 +438,18 @@ export default function JournalPage() {
                           {trade.type === "buy" ? "ACHAT" : "VENTE"}
                         </span>
                       </td>
+                      <td className="px-5 py-3.5 text-sm text-right">{trade.amountInvested?.toFixed(0) || "—"} $</td>
                       <td className="px-5 py-3.5 text-sm text-right">{trade.entryPrice.toFixed(2)} $</td>
                       <td className="px-5 py-3.5 text-sm text-right">{trade.exitPrice.toFixed(2)} $</td>
-                      <td className="px-5 py-3.5 text-sm text-right">{trade.quantity}</td>
                       <td className={`px-5 py-3.5 text-sm text-right font-semibold ${
                         trade.pnl >= 0 ? "text-accent-green" : "text-accent-red"
                       }`}>
                         {trade.pnl >= 0 ? "+" : ""}{trade.pnl.toFixed(2)} $
+                      </td>
+                      <td className={`px-5 py-3.5 text-sm text-right ${
+                        trade.pnlPercent >= 0 ? "text-accent-green" : "text-accent-red"
+                      }`}>
+                        {trade.pnlPercent >= 0 ? "+" : ""}{trade.pnlPercent.toFixed(2)}%
                       </td>
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-2">

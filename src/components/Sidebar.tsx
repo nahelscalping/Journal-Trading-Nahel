@@ -15,6 +15,7 @@ import {
   LineChart,
   Menu,
   X,
+  Settings,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +31,8 @@ const navItems = [
   { href: "/neldia", label: "Nahel IA", icon: Bot },
   { href: "/notes", label: "Notes", icon: StickyNote },
   { href: "/plans", label: "Plans", icon: ClipboardList },
+  { label: "COMPTE", items: [] },
+  { href: "/settings", label: "Paramètres", icon: Settings },
 ];
 
 export default function Sidebar() {
