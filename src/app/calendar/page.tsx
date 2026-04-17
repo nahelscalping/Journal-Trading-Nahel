@@ -115,38 +115,37 @@ export default function CalendarPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          <button onClick={prevMonth} className="glass-btn p-2 rounded-xl">
-            <ChevronLeft size={18} />
-          </button>
-          <motion.h1
-            key={`${year}-${month}`}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-xl md:text-2xl font-bold min-w-[200px] text-center"
-          >
-            {MONTHS_FR[month]} {year}
-          </motion.h1>
-          <button onClick={nextMonth} className="glass-btn p-2 rounded-xl">
-            <ChevronRight size={18} />
-          </button>
-          <button onClick={goToday} className="glass-btn px-3 py-1.5 rounded-xl text-xs font-medium">
-            Aujourd&apos;hui
-          </button>
-        </div>
-
-        {/* Monthly stats bar */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs text-text-muted">Stats du mois :</span>
-          <span className={`text-sm font-bold px-3 py-1 rounded-xl ${
-            monthlyStats.totalPnl >= 0
-              ? "bg-accent-green/15 text-accent-green"
-              : "bg-accent-red/15 text-accent-red"
-          }`}>
-            {formatPnl(monthlyStats.totalPnl)}
-          </span>
-          <span className="text-xs text-text-muted">{monthlyStats.tradeDays} jours</span>
+      <div className="mb-3 md:mb-6">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 md:gap-4">
+            <button onClick={prevMonth} className="glass-btn p-1.5 md:p-2 rounded-xl">
+              <ChevronLeft size={16} />
+            </button>
+            <motion.h1
+              key={`${year}-${month}`}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-base md:text-2xl font-bold min-w-[140px] md:min-w-[200px] text-center"
+            >
+              {MONTHS_FR[month]} {year}
+            </motion.h1>
+            <button onClick={nextMonth} className="glass-btn p-1.5 md:p-2 rounded-xl">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={goToday} className="glass-btn px-2.5 py-1 md:px-3 md:py-1.5 rounded-xl text-xs font-medium">
+              Auj.
+            </button>
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-xl ${
+              monthlyStats.totalPnl >= 0
+                ? "bg-accent-green/15 text-accent-green"
+                : "bg-accent-red/15 text-accent-red"
+            }`}>
+              {formatPnl(monthlyStats.totalPnl)}
+            </span>
+            <span className="text-[10px] text-text-muted hidden sm:inline">{monthlyStats.tradeDays} jours</span>
+          </div>
         </div>
       </div>
 

@@ -97,11 +97,11 @@ export default function JournalPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-3 md:mb-6">
         <motion.h1
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="text-2xl md:text-3xl font-bold"
+          className="text-xl md:text-3xl font-bold"
         >
           Journal de Trades
         </motion.h1>
@@ -111,10 +111,11 @@ export default function JournalPage() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={openNewTrade}
-          className="flex items-center gap-2 px-5 py-2.5 glass-btn-primary rounded-2xl font-medium transition-all text-sm"
+          className="flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 md:py-2.5 glass-btn-primary rounded-2xl font-medium transition-all text-xs md:text-sm"
         >
-          <Plus size={18} />
-          Nouveau Trade
+          <Plus size={16} />
+          <span className="hidden sm:inline">Nouveau Trade</span>
+          <span className="sm:hidden">Ajouter</span>
         </motion.button>
       </div>
 
@@ -122,7 +123,7 @@ export default function JournalPage() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-card p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+        className="glass-card p-3 md:p-4 mb-3 md:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 md:gap-3"
       >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center glass-btn text-primary">

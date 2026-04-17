@@ -127,24 +127,25 @@ export default function NahelIAPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-[calc(100svh-9rem)] md:h-[calc(100vh-4rem)]">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-4 mb-6 flex-wrap"
+        className="flex items-center gap-3 mb-3 md:mb-6 flex-wrap"
       >
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
-          <Bot size={24} className="text-white" />
+        <div className="w-9 h-9 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shrink-0">
+          <Bot size={18} className="text-white md:hidden" />
+          <Bot size={24} className="text-white hidden md:block" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Nahel IA</h1>
-          <p className="text-sm text-text-muted">Assistant trading spot crypto — SMC & ICT</p>
+          <h1 className="text-lg md:text-2xl font-bold">Nahel IA</h1>
+          <p className="text-xs md:text-sm text-text-muted hidden sm:block">Assistant trading spot crypto — SMC & ICT</p>
         </div>
 
-        {/* Provider selector */}
-        <div className="ml-auto flex items-center gap-2">
-          <div className="flex rounded-xl bg-surface-light border border-border overflow-hidden text-xs">
+        {/* Provider selector — scrollable on mobile */}
+        <div className="ml-auto overflow-x-auto max-w-[calc(100vw-10rem)]">
+          <div className="flex rounded-xl bg-surface-light border border-border overflow-hidden text-xs min-w-max">
             {([
               { id: "auto" as const, label: "Auto", icon: Sparkles },
               { id: "groq" as const, label: "Groq", icon: Zap },
@@ -154,14 +155,14 @@ export default function NahelIAPage() {
               <button
                 key={p.id}
                 onClick={() => setProvider(p.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 transition-colors ${
+                className={`flex items-center gap-1 px-2 md:px-3 py-1.5 md:py-2 transition-colors whitespace-nowrap ${
                   provider === p.id
                     ? "bg-primary text-white"
                     : "text-text-muted hover:text-foreground"
                 }`}
               >
-                <p.icon size={13} />
-                {p.label}
+                <p.icon size={12} />
+                <span className="hidden sm:inline">{p.label}</span>
                 {providerStatus && p.id !== "auto" && (
                   <span className={`w-1.5 h-1.5 rounded-full ${
                     providerStatus[p.id as keyof ProviderStatus] ? "bg-accent-green" : "bg-accent-red"

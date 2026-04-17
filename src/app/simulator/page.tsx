@@ -128,11 +128,11 @@ export default function SimulatorPage() {
   return (
     <div>
       <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-        className="text-2xl md:text-3xl font-bold mb-2">
+        className="text-xl md:text-3xl font-bold mb-1">
         Simulateur Long Terme
       </motion.h1>
       <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
-        className="text-text-muted text-sm mb-8">
+        className="text-text-muted text-xs md:text-sm mb-4 md:mb-8">
         Projetez vos performances selon votre stratégie
       </motion.p>
 

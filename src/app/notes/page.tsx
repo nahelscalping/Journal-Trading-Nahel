@@ -44,18 +44,18 @@ export default function NotesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-3 md:mb-6">
         <motion.h1
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="text-3xl font-bold"
+          className="text-xl md:text-3xl font-bold"
         >
           {selectedNote ? (
             <button
               onClick={() => { setSelectedNote(null); setIsCreating(false); }}
               className="flex items-center gap-2 hover:text-primary transition-colors"
             >
-              <ArrowLeft size={24} />
+              <ArrowLeft size={20} />
               Mes Notes
             </button>
           ) : (
@@ -69,10 +69,11 @@ export default function NotesPage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={createNote}
-            className="flex items-center gap-2 px-5 py-2.5 glass-btn-primary rounded-2xl font-medium transition-all text-sm"
+            className="flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 md:py-2.5 glass-btn-primary rounded-2xl font-medium transition-all text-xs md:text-sm"
           >
-            <Plus size={18} />
-            Nouvelle note
+            <Plus size={16} />
+            <span className="hidden sm:inline">Nouvelle note</span>
+            <span className="sm:hidden">Ajouter</span>
           </motion.button>
         )}
       </div>

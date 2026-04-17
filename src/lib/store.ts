@@ -23,6 +23,7 @@ export interface UserSettings {
   startingCapital: number;
   displayName: string;
   syncCode: string;
+  autoBackupEnabled: boolean;
 }
 
 export interface TradingPlan {
@@ -61,6 +62,7 @@ const defaultSettings: UserSettings = {
   startingCapital: 1000,
   displayName: "Nahel",
   syncCode: "",
+  autoBackupEnabled: false,
 };
 
 export function getSettings(): UserSettings {
@@ -141,11 +143,21 @@ export function saveTrade(trade: Trade): void {
   if (idx >= 0) trades[idx] = trade;
   else trades.unshift(trade);
   setItem("neldia_trades", trades);
+  // Auto-backup: regenerate backup code after every change
+  const settings = getSettings();
+  if (settings.autoBackupEnabled) {
+    refreshAutoBackup();
+  }
 }
 
 export function deleteTrade(id: string): void {
   const trades = getTrades().filter((t) => t.id !== id);
   setItem("neldia_trades", trades);
+  // Auto-backup
+  const settings = getSettings();
+  if (settings.autoBackupEnabled) {
+    refreshAutoBackup();
+  }
 }
 
 // ============ PLANS ============
@@ -250,6 +262,41 @@ export function getStats() {
   };
 }
 
+// ============ AUTO BACKUP ============
+const AUTO_BACKUP_KEY = "neldia_auto_backup";
+const AUTO_BACKUP_TS_KEY = "neldia_auto_backup_ts";
+
+export function refreshAutoBackup(): void {
+  const code = exportAllData();
+  setItem(AUTO_BACKUP_KEY, code);
+  if (typeof window !== "undefined") {
+    localStorage.setItem(AUTO_BACKUP_TS_KEY, new Date().toISOString());
+  }
+}
+
+export function getAutoBackup(): { code: string; updatedAt: string } | null {
+  if (typeof window === "undefined") return null;
+  const code = localStorage.getItem(AUTO_BACKUP_KEY);
+  const ts = localStorage.getItem(AUTO_BACKUP_TS_KEY);
+  if (!code) return null;
+  return { code: JSON.parse(code), updatedAt: ts || "" };
+}
+
+export function enableAutoBackup(): void {
+  const settings = getSettings();
+  saveSettings({ ...settings, autoBackupEnabled: true });
+  refreshAutoBackup();
+}
+
+export function disableAutoBackup(): void {
+  const settings = getSettings();
+  saveSettings({ ...settings, autoBackupEnabled: false });
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(AUTO_BACKUP_KEY);
+    localStorage.removeItem(AUTO_BACKUP_TS_KEY);
+  }
+}
+
 // ============ DATA SYNC (Export/Import) ============
 export function exportAllData(): string {
   const data = {
@@ -270,10 +317,12 @@ export function importAllData(code: string): boolean {
     const data = JSON.parse(json);
     if (!data.version) return false;
 
-    if (data.settings) saveSettings(data.settings);
+    if (data.settings) saveSettings({ ...data.settings, autoBackupEnabled: true });
     if (data.trades) setItem("neldia_trades", data.trades);
     if (data.plans) setItem("neldia_plans", data.plans);
     if (data.notes) setItem("neldia_notes", data.notes);
+    // Enable auto-backup after successful import
+    refreshAutoBackup();
     return true;
   } catch {
     return false;

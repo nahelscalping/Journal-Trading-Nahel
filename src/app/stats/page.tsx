@@ -52,7 +52,7 @@ export default function StatsPage() {
       <motion.h1
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="text-2xl md:text-3xl font-bold mb-8"
+        className="text-xl md:text-3xl font-bold mb-3 md:mb-8"
       >
         Statistiques
       </motion.h1>
