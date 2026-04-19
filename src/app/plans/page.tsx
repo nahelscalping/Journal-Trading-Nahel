@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, Edit3, X, ClipboardList, Clock, Zap, FileText } from "lucide-react";
 import { getPlans, savePlan, deletePlan, generateId, TradingPlan } from "@/lib/store";
+import { useDataRefresh } from "@/lib/useDataRefresh";
 
 const defaultPlan: Omit<TradingPlan, "id" | "createdAt" | "updatedAt"> = {
   name: "",
@@ -20,9 +21,12 @@ export default function PlansPage() {
   const [form, setForm] = useState(defaultPlan);
   const [selectedPlan, setSelectedPlan] = useState<TradingPlan | null>(null);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     setPlans(getPlans());
   }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+  useDataRefresh(refresh);
 
   const handleSubmit = () => {
     if (!form.name) return;

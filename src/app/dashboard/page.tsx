@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Target, DollarSign, BarChart3, Award, Wallet } from "lucide-react";
 import { getStats, getTrades, getCurrentCapital, getSettings } from "@/lib/store";
+import { useDataRefresh } from "@/lib/useDataRefresh";
 import {
   AreaChart, Area, BarChart, Bar, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -25,12 +26,15 @@ export default function DashboardPage() {
   const [capital, setCapital] = useState(0);
   const [settings, setSettingsState] = useState(getSettings());
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     setStats(getStats());
     setTrades(getTrades());
     setCapital(getCurrentCapital());
     setSettingsState(getSettings());
   }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+  useDataRefresh(refresh);
 
   const recentTrades = trades.slice(0, 5);
 

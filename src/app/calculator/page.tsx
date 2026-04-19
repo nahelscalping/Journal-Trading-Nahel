@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Calculator, AlertTriangle, TrendingUp, TrendingDown, DollarSign, Percent, Wallet } from "lucide-react";
 import { getCurrentCapital, getSettings, calculateTradePnl } from "@/lib/store";
+import { useDataRefresh } from "@/lib/useDataRefresh";
 
 export default function CalculatorPage() {
   const [capital, setCapital] = useState<number>(0);
@@ -12,10 +13,12 @@ export default function CalculatorPage() {
   const [takeProfit, setTakeProfit] = useState<number>(0);
   const [feePercent, setFeePercent] = useState<number>(0.1);
 
-  useEffect(() => {
-    const cap = getCurrentCapital();
-    setCapital(cap);
+  const refresh = useCallback(() => {
+    setCapital(getCurrentCapital());
   }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+  useDataRefresh(refresh);
 
   // Calculations based on amount invested (full capital)
   const amountInvested = capital;

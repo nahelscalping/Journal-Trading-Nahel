@@ -1,18 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, StickyNote, X, ArrowLeft } from "lucide-react";
 import { getNotes, saveNote, deleteNote, generateId, Note } from "@/lib/store";
+import { useDataRefresh } from "@/lib/useDataRefresh";
 
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     setNotes(getNotes());
   }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+  useDataRefresh(refresh);
 
   const createNote = () => {
     const note: Note = {

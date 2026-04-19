@@ -302,6 +302,8 @@ export function applySnapshotToLocal(snap: CloudSnapshot): void {
       displayName: snap.settings.display_name ?? current.displayName,
     });
   }
+  // Notifie les pages abonnées qu'il faut re-rendre avec les nouvelles données.
+  window.dispatchEvent(new CustomEvent("nodex-data-refreshed"));
 }
 
 // === SYNC INITIALE (login) ===
@@ -319,10 +321,6 @@ export async function syncAfterLogin(userId: string): Promise<"pulled" | "pushed
 
   if (cloudHasData) {
     applySnapshotToLocal(snap);
-    // Notifie l'UI qu'elle doit re-render
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("nodex-data-refreshed"));
-    }
     return "pulled";
   }
 

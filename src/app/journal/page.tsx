@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, Edit3, X, TrendingUp, TrendingDown, DollarSign, Wallet } from "lucide-react";
 import {
@@ -8,6 +8,7 @@ import {
   getCurrentCapital, calculateTradePnl, getSettings,
   Trade,
 } from "@/lib/store";
+import { useDataRefresh } from "@/lib/useDataRefresh";
 
 type TradeForm = Omit<Trade, "id">;
 
@@ -33,10 +34,15 @@ export default function JournalPage() {
   const [form, setForm] = useState<TradeForm>(makeDefaultTrade(1000));
   const [currentCapital, setCurrentCapital] = useState(1000);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     setTrades(getTrades());
     setCurrentCapital(getCurrentCapital());
   }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+  useDataRefresh(refresh);
 
   const liveCalc = calculateTradePnl(
     form.type,

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { BarChart3, TrendingUp, TrendingDown, Target, DollarSign, Wallet, Percent } from "lucide-react";
 import { getStats, getTrades } from "@/lib/store";
+import { useDataRefresh } from "@/lib/useDataRefresh";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -23,10 +24,13 @@ export default function StatsPage() {
   const [stats, setStats] = useState(getStats());
   const [trades, setTrades] = useState(getTrades());
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     setStats(getStats());
     setTrades(getTrades());
   }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+  useDataRefresh(refresh);
 
   const pairMap = new Map<string, number>();
   trades.forEach((t) => pairMap.set(t.pair, (pairMap.get(t.pair) || 0) + t.pnl));

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Calendar, TrendingUp, TrendingDown } from "lucide-react";
 import { getTrades, getSettings, Trade } from "@/lib/store";
+import { useDataRefresh } from "@/lib/useDataRefresh";
 
 const DAYS_FR = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 const MONTHS_FR = [
@@ -32,17 +33,20 @@ function getWeekNumber(date: Date): number {
 
 export default function CalendarPage() {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [settings, setSettings] = useState(getSettings());
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     setTrades(getTrades());
+    setSettings(getSettings());
   }, []);
 
-  const settings = getSettings();
+  useEffect(() => { refresh(); }, [refresh]);
+  useDataRefresh(refresh);
 
   // Build day data map for current month
   const dayMap = useMemo(() => {
