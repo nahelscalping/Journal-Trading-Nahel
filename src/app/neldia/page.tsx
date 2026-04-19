@@ -2,19 +2,23 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, ImagePlus, X, Loader2, Sparkles, Cpu, Cloud, Zap, AlertCircle, ExternalLink } from "lucide-react";
+import {
+  Send,
+  Bot,
+  User,
+  ImagePlus,
+  X,
+  Loader2,
+  Sparkles,
+  AlertCircle,
+  ExternalLink,
+} from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   image?: string;
-  provider?: string;
-}
-
-interface ProviderStatus {
-  gemini: boolean;
-  groq: boolean;
-  ollama: boolean;
+  model?: string;
 }
 
 export default function NahelIAPage() {
@@ -22,8 +26,7 @@ export default function NahelIAPage() {
   const [input, setInput] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [provider, setProvider] = useState<"auto" | "gemini" | "groq" | "ollama">("auto");
-  const [providerStatus, setProviderStatus] = useState<ProviderStatus | null>(null);
+  const [configured, setConfigured] = useState<boolean | null>(null);
   const [showSetup, setShowSetup] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,18 +35,18 @@ export default function NahelIAPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Check which providers are available
+  // Vérifie au chargement si la clé Gemini est configurée côté serveur.
   useEffect(() => {
     fetch("/api/neldia")
       .then((r) => r.json())
       .then((data) => {
-        setProviderStatus(data.providers);
-        if (!data.anyAvailable) setShowSetup(true);
+        setConfigured(data.configured);
+        if (!data.configured) setShowSetup(true);
       })
       .catch(() => {});
   }, []);
 
-  // Compress image before sending to avoid API size limits
+  // Compresse l'image avant envoi pour éviter les limites de taille de l'API.
   const compressImage = (dataUrl: string, maxWidth = 1024): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -78,7 +81,11 @@ export default function NahelIAPage() {
   const sendMessage = async () => {
     if (!input.trim() && !image) return;
 
-    const userMsg: Message = { role: "user", content: input, image: image || undefined };
+    const userMsg: Message = {
+      role: "user",
+      content: input,
+      image: image || undefined,
+    };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setImage(null);
@@ -88,32 +95,28 @@ export default function NahelIAPage() {
       const res = await fetch("/api/neldia", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: input,
-          image: image,
-          provider: provider === "auto" ? undefined : provider,
-        }),
+        body: JSON.stringify({ message: input, image }),
       });
 
       const data = await res.json();
 
       if (data.error) {
-        if (data.setup) {
-          setShowSetup(true);
-        }
-        setMessages((prev) => [...prev, { role: "assistant", content: data.error }]);
+        if (data.setup) setShowSetup(true);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: data.error },
+        ]);
       } else {
-        setMessages((prev) => [...prev, {
-          role: "assistant",
-          content: data.response,
-          provider: data.provider,
-        }]);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: data.response, model: data.model },
+        ]);
       }
     } catch {
-      setMessages((prev) => [...prev, {
-        role: "assistant",
-        content: "Erreur de connexion au serveur.",
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Erreur de connexion au serveur." },
+      ]);
     }
 
     setLoading(false);
@@ -132,49 +135,32 @@ export default function NahelIAPage() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3 mb-3 md:mb-6 flex-wrap"
+        className="flex items-center gap-3 mb-3 md:mb-6"
       >
-        <div className="w-9 h-9 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shrink-0">
-          <Bot size={18} className="text-white md:hidden" />
-          <Bot size={24} className="text-white hidden md:block" />
+        <div className="w-9 h-9 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-accent-green flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(74,222,128,0.35)]">
+          <Bot size={18} className="text-background md:hidden" />
+          <Bot size={24} className="text-background hidden md:block" />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-lg md:text-2xl font-bold">Nahel IA</h1>
-          <p className="text-xs md:text-sm text-text-muted hidden sm:block">Assistant trading spot crypto — SMC & ICT</p>
+          <p className="text-xs md:text-sm text-text-muted hidden sm:block">
+            Assistant trading spot crypto — SMC & ICT
+          </p>
         </div>
 
-        {/* Provider selector — scrollable on mobile */}
-        <div className="ml-auto overflow-x-auto max-w-[calc(100vw-10rem)]">
-          <div className="flex rounded-xl bg-surface-light border border-border overflow-hidden text-xs min-w-max">
-            {([
-              { id: "auto" as const, label: "Auto", icon: Sparkles },
-              { id: "groq" as const, label: "Groq", icon: Zap },
-              { id: "gemini" as const, label: "Gemini", icon: Cloud },
-              { id: "ollama" as const, label: "Local", icon: Cpu },
-            ]).map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setProvider(p.id)}
-                className={`flex items-center gap-1 px-2 md:px-3 py-1.5 md:py-2 transition-colors whitespace-nowrap ${
-                  provider === p.id
-                    ? "bg-primary text-white"
-                    : "text-text-muted hover:text-foreground"
-                }`}
-              >
-                <p.icon size={12} />
-                <span className="hidden sm:inline">{p.label}</span>
-                {providerStatus && p.id !== "auto" && (
-                  <span className={`w-1.5 h-1.5 rounded-full ${
-                    providerStatus[p.id as keyof ProviderStatus] ? "bg-accent-green" : "bg-accent-red"
-                  }`} />
-                )}
-              </button>
-            ))}
-          </div>
+        {/* Badge provider — juste indicatif, pas de choix utilisateur */}
+        <div className="flex items-center gap-1.5 rounded-full bg-surface-light border border-border px-2.5 py-1 text-[10px] text-text-muted">
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              configured ? "bg-accent-green" : "bg-accent-red"
+            }`}
+          />
+          <span className="hidden sm:inline">Propulsé par</span>
+          <span className="font-semibold">Gemini 2.5</span>
         </div>
       </motion.div>
 
-      {/* Setup guide */}
+      {/* Guide de setup si la clé manque */}
       <AnimatePresence>
         {showSetup && (
           <motion.div
@@ -185,73 +171,71 @@ export default function NahelIAPage() {
           >
             <div className="bg-surface rounded-2xl border border-accent-yellow/30 p-5">
               <div className="flex items-start gap-3 mb-4">
-                <AlertCircle size={20} className="text-accent-yellow shrink-0 mt-0.5" />
+                <AlertCircle
+                  size={20}
+                  className="text-accent-yellow shrink-0 mt-0.5"
+                />
                 <div>
-                  <h3 className="font-semibold text-accent-yellow">Configuration requise</h3>
+                  <h3 className="font-semibold text-accent-yellow">
+                    Clé API Gemini manquante
+                  </h3>
                   <p className="text-sm text-text-muted mt-1">
-                    Pour utiliser Nahel IA, configure au moins un provider. Le plus simple :
+                    Pour activer Nahel IA, configure ta clé Gemini dans les
+                    variables d&apos;environnement Vercel.
                   </p>
                 </div>
-                <button onClick={() => setShowSetup(false)} className="ml-auto text-text-muted hover:text-foreground">
+                <button
+                  onClick={() => setShowSetup(false)}
+                  className="ml-auto text-text-muted hover:text-foreground"
+                >
                   <X size={16} />
                 </button>
               </div>
 
-              <div className="space-y-3">
-                {/* Groq - recommended */}
-                <div className="bg-surface-light rounded-xl p-4 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Zap size={16} className="text-accent-green" />
-                    <span className="font-semibold text-sm">Groq</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent-green/15 text-accent-green font-medium">RECOMMANDÉ</span>
-                  </div>
-                  <ol className="text-sm text-text-muted space-y-1 ml-6 list-decimal">
-                    <li>
-                      Va sur{" "}
-                      <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer"
-                        className="text-primary hover:underline inline-flex items-center gap-1">
-                        console.groq.com/keys <ExternalLink size={11} />
-                      </a>
-                    </li>
-                    <li>Crée un compte gratuit (pas de carte bancaire)</li>
-                    <li>Clique &quot;Create API Key&quot; et copie la clé</li>
-                    <li>
-                      Ouvre le fichier{" "}
-                      <code className="text-xs bg-surface px-1.5 py-0.5 rounded">.env.local</code>
-                      {" "}et remplace <code className="text-xs bg-surface px-1.5 py-0.5 rounded">ta_cle_groq_ici</code> par ta clé
-                    </li>
-                    <li>Relance l&apos;app avec <code className="text-xs bg-surface px-1.5 py-0.5 rounded">npm run dev</code></li>
-                  </ol>
-                </div>
-
-                {/* Gemini */}
-                <div className="bg-surface-light rounded-xl p-4 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Cloud size={16} className="text-primary" />
-                    <span className="font-semibold text-sm">Google Gemini</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">ANALYSE D&apos;IMAGES</span>
-                  </div>
-                  <ol className="text-sm text-text-muted space-y-1 ml-6 list-decimal">
-                    <li>
-                      Va sur{" "}
-                      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
-                        className="text-primary hover:underline inline-flex items-center gap-1">
-                        aistudio.google.com <ExternalLink size={11} />
-                      </a>
-                    </li>
-                    <li>Clique &quot;Create API Key&quot; et copie la clé</li>
-                    <li>
-                      Colle dans <code className="text-xs bg-surface px-1.5 py-0.5 rounded">.env.local</code> à la ligne GEMINI_API_KEY
-                    </li>
-                  </ol>
-                </div>
+              <div className="bg-surface-light rounded-xl p-4 border border-border">
+                <ol className="text-sm text-text-muted space-y-2 list-decimal ml-5">
+                  <li>
+                    Va sur{" "}
+                    <a
+                      href="https://console.cloud.google.com/apis/library/generativelanguage.googleapis.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      Google Cloud Console <ExternalLink size={11} />
+                    </a>{" "}
+                    et active la <strong>Generative Language API</strong>.
+                  </li>
+                  <li>
+                    Dans{" "}
+                    <a
+                      href="https://console.cloud.google.com/apis/credentials"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      APIs et services → Identifiants{" "}
+                      <ExternalLink size={11} />
+                    </a>
+                    , crée une clé API (commence par <code>AIza…</code>).
+                  </li>
+                  <li>
+                    Ajoute <code className="text-xs bg-surface px-1.5 py-0.5 rounded">GEMINI_API_KEY</code>{" "}
+                    dans les variables d&apos;environnement de ton projet
+                    Vercel (ou dans{" "}
+                    <code className="text-xs bg-surface px-1.5 py-0.5 rounded">
+                      .env.local
+                    </code>{" "}
+                    en dev), puis redéploie.
+                  </li>
+                </ol>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Messages area */}
+      {/* Zone messages */}
       <div className="flex-1 overflow-y-auto rounded-2xl bg-surface border border-border p-4 mb-4 space-y-4">
         {messages.length === 0 && !showSetup && (
           <motion.div
@@ -262,11 +246,13 @@ export default function NahelIAPage() {
             <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary-light/20 flex items-center justify-center mb-4">
               <Sparkles size={36} className="text-primary" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Bienvenue sur Nahel IA</h2>
+            <h2 className="text-xl font-semibold mb-2">
+              Bienvenue sur Nahel IA
+            </h2>
             <p className="text-text-muted max-w-md text-sm leading-relaxed">
-              Je suis ton assistant trading spécialisé en SMC et ICT.
-              Pose-moi des questions sur ta stratégie, envoie-moi un graphique à analyser,
-              ou demande-moi des explications sur un concept.
+              Je suis ton assistant trading spécialisé en SMC et ICT. Pose-moi
+              des questions sur ta stratégie, envoie-moi un graphique à
+              analyser, ou demande-moi des explications sur un concept.
             </p>
             <div className="flex flex-wrap gap-2 mt-6 justify-center">
               {[
@@ -297,27 +283,30 @@ export default function NahelIAPage() {
               className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               {msg.role === "assistant" && (
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shrink-0">
-                  <Bot size={16} className="text-white" />
+                <div className="w-8 h-8 rounded-xl bg-accent-green flex items-center justify-center shrink-0 shadow-[0_0_14px_rgba(74,222,128,0.3)]">
+                  <Bot size={16} className="text-background" />
                 </div>
               )}
               <div className={`max-w-[70%]`}>
                 <div
                   className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                     msg.role === "user"
-                      ? "bg-primary text-white rounded-br-md"
+                      ? "bg-primary text-background rounded-br-md font-medium"
                       : "bg-surface-light border border-border rounded-bl-md"
                   }`}
                 >
                   {msg.image && (
-                    <img src={msg.image} alt="Chart" className="rounded-xl mb-2 max-h-48 w-auto" />
+                    <img
+                      src={msg.image}
+                      alt="Chart"
+                      className="rounded-xl mb-2 max-h-48 w-auto"
+                    />
                   )}
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 </div>
-                {msg.provider && (
-                  <p className="text-[10px] text-text-muted mt-1 ml-1 flex items-center gap-1">
-                    {msg.provider === "gemini" ? <Cloud size={10} /> : msg.provider === "groq" ? <Zap size={10} /> : <Cpu size={10} />}
-                    via {msg.provider}
+                {msg.model && (
+                  <p className="text-[10px] text-text-muted mt-1 ml-1">
+                    via {msg.model}
                   </p>
                 )}
               </div>
@@ -331,7 +320,11 @@ export default function NahelIAPage() {
         </AnimatePresence>
 
         {loading && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex gap-3"
+          >
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shrink-0">
               <Bot size={16} className="text-white" />
             </div>
@@ -345,7 +338,7 @@ export default function NahelIAPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Image preview */}
+      {/* Preview image */}
       <AnimatePresence>
         {image && (
           <motion.div
@@ -355,7 +348,11 @@ export default function NahelIAPage() {
             className="mb-2"
           >
             <div className="relative inline-block">
-              <img src={image} alt="Preview" className="h-20 rounded-xl border border-border" />
+              <img
+                src={image}
+                alt="Preview"
+                className="h-20 rounded-xl border border-border"
+              />
               <button
                 onClick={() => setImage(null)}
                 className="absolute -top-2 -right-2 w-6 h-6 bg-accent-red rounded-full flex items-center justify-center"
@@ -367,9 +364,15 @@ export default function NahelIAPage() {
         )}
       </AnimatePresence>
 
-      {/* Input bar */}
+      {/* Barre de saisie */}
       <div className="flex items-end gap-3">
-        <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          onChange={handleImageUpload}
+          className="hidden"
+        />
         <button
           onClick={() => fileInputRef.current?.click()}
           className="p-3 rounded-xl bg-surface border border-border hover:border-primary/30 text-text-muted hover:text-primary transition-colors"
